@@ -19,16 +19,48 @@ void AMovingPlatform::BeginPlay()
         SetReplicates(true);
         SetReplicateMovement(true);
     }
+
+    GlobalStartLocation = GetActorLocation();
+    GlobalTargetLocation = GetTransform().TransformPosition(TargetLocation);
+}
+
+void AMovingPlatform::AddActiveTrigger() 
+{
+    ActiveTriggers++;
+}
+
+void AMovingPlatform::RemoveActiveTrigger() 
+{
+    if(ActiveTriggers>0)
+    {
+        ActiveTriggers--;
+    }
 }
 
 void AMovingPlatform::Tick(float DeltaTime) 
 {
-    Super::Tick(DeltaTime);
+    Super::Tick(DeltaTime); 
 
-    if(HasAuthority()) // Not on server is cliet == !HasAuthority
+    if(ActiveTriggers > 0)
     {
-        FVector Location = GetActorLocation();
-        Location += FVector(Speed * DeltaTime, 0.f, 0.f);
-        SetActorLocation(Location);
+        if(HasAuthority()) // Not on server is cliet == !HasAuthority. HasAuthority() returns true if this actor has network authority
+        {
+            FVector Location = GetActorLocation();
+            float JourneyLength = (GlobalTargetLocation - GlobalStartLocation).Size();
+            float JourneyTravelled = (Location - GlobalStartLocation).Size();
+
+            if(JourneyTravelled >= JourneyLength)
+            {
+                FVector Swap = GlobalStartLocation;
+                GlobalStartLocation = GlobalTargetLocation;
+                GlobalTargetLocation = Swap;
+            }
+
+            FVector Direction = (GlobalTargetLocation - GlobalStartLocation).GetSafeNormal();
+            Location += Speed * DeltaTime * Direction;
+            SetActorLocation(Location);
+        }
     }
+
+
 }

@@ -4,13 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "OnlineSubsystem.h"
+#include "PuzzlePlatforms/Interfaces/MenuInterface.h"
 #include "PuzzlePlatformsGameInstance.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PUZZLEPLATFORMS_API UPuzzlePlatformsGameInstance : public UGameInstance
+class PUZZLEPLATFORMS_API UPuzzlePlatformsGameInstance : public UGameInstance, public IMenuInterface
 {
 	GENERATED_BODY()
 	
@@ -19,15 +21,28 @@ public:
 	virtual void Init() override;
 
 	UFUNCTION(BlueprintCallable)
-	void LoadMenu();
+	void LoadMenuWidget();
+
+	UFUNCTION(BlueprintCallable)
+	void InGameLoadMenu();
 
 	UFUNCTION(Exec)
 	void Host();
 
 	UFUNCTION(Exec)
-	void Join(const FString& Address);
+	void Join(const FString& Address) override;
+
+	virtual void LoadMainMenu() override;
 
 private:
 	TSubclassOf<class UUserWidget> MenuClass;
+	TSubclassOf<class UUserWidget> InGameMenuClass;
 
+	class UMainMenu* Menu;
+
+	IOnlineSessionPtr SessionInterface;
+	void OnCreateSessionComplete(FName SessionName, bool Success);
+	void OnDestroySessionComplete(FName SessionName, bool Success);
+
+	void CreateSession();
 };
